@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Loader2, UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PortalCabecalho } from "@/components/portal/PortalCabecalho";
 import { supabase } from "@/lib/supabase/client";
 import { useSessaoPortal } from "@/lib/supabase/useSessaoPortal";
 import type { MembroEquipe, PapelEquipe } from "@/lib/supabase/tipos";
@@ -36,15 +34,7 @@ export default function GerenciarEquipe() {
   }, []);
 
   useEffect(() => {
-    if (sessao.carregando) return;
-    if (!sessao.logado) {
-      router.replace("/portal/login");
-      return;
-    }
-    if (sessao.tipo !== "equipe") {
-      router.replace("/portal");
-      return;
-    }
+    if (sessao.carregando || !sessao.logado || sessao.tipo !== "equipe") return;
     if (sessao.equipe.papel !== "admin") {
       router.replace("/portal/equipe");
       return;
@@ -54,12 +44,9 @@ export default function GerenciarEquipe() {
 
   if (sessao.carregando || !sessao.logado || sessao.tipo !== "equipe" || sessao.equipe.papel !== "admin" || !membros) {
     return (
-      <>
-        <PortalCabecalho mostrarSair={sessao.logado} />
-        <main className="flex min-h-[60vh] items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-prata" />
-        </main>
-      </>
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-prata" />
+      </main>
     );
   }
 
@@ -88,17 +75,7 @@ export default function GerenciarEquipe() {
   }
 
   return (
-    <>
-      <PortalCabecalho mostrarSair />
-      <main className="mx-auto max-w-2xl px-6 py-16">
-        <Link
-          href="/portal/equipe"
-          className="mb-6 flex w-fit items-center gap-2 font-mono text-legenda uppercase tracking-[0.1em] text-prata transition-colors hover:text-offwhite"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-          Clientes
-        </Link>
-
+    <main className="mx-auto max-w-2xl px-6 py-16">
         <p className="rotulo mb-2">Administração</p>
         <h1 className="mb-8 font-display text-h2 font-semibold uppercase leading-none tracking-[0.02em]">
           Equipe
@@ -168,7 +145,6 @@ export default function GerenciarEquipe() {
             </li>
           ))}
         </ul>
-      </main>
-    </>
+    </main>
   );
 }

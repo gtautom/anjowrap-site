@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,8 +17,14 @@ export default function LoginPortal() {
   const sessao = useSessaoPortal();
   const [identificador, setIdentificador] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  const [esqueciAberto, setEsqueciAberto] = useState(false);
+  const [telefoneEsqueci, setTelefoneEsqueci] = useState("");
+  const [enviandoEsqueci, setEnviandoEsqueci] = useState(false);
+  const [mensagemEsqueci, setMensagemEsqueci] = useState<string | null>(null);
 
   useEffect(() => {
     if (sessao.carregando || !sessao.logado) return;
@@ -41,6 +47,19 @@ export default function LoginPortal() {
 
     setEnviando(false);
     if (error) setErro("Telefone/e-mail ou senha incorretos.");
+  }
+
+  async function solicitarRedefinicao() {
+    setMensagemEsqueci(null);
+    const telefone = normalizarTelefoneBR(telefoneEsqueci);
+    if (telefone.replace(/\D/g, "").length < 12) {
+      setMensagemEsqueci("Informe o telefone completo, com DDD.");
+      return;
+    }
+    setEnviandoEsqueci(true);
+    await supabase.rpc("solicitar_redefinicao_senha", { p_telefone: telefone });
+    setEnviandoEsqueci(false);
+    setMensagemEsqueci("Se esse telefone estiver cadastrado, a equipe vai te procurar em breve.");
   }
 
   if (sessao.carregando || (sessao.logado && sessao.tipo !== "sem-acesso")) {
@@ -83,14 +102,29 @@ export default function LoginPortal() {
                 <Label htmlFor="senha" className="mb-2 block">
                   Senha
                 </Label>
-                <Input
-                  id="senha"
-                  type="password"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && entrar()}
-                  autoComplete="current-password"
-                />
+                <div className="relative">
+                  <Input
+                    id="senha"
+                    type={mostrarSenha ? "text" : "password"}
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && entrar()}
+                    autoComplete="current-password"
+                    className="pr-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenha((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-terciario transition-colors hover:text-prata"
+                    aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {mostrarSenha ? (
+                      <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+                    ) : (
+                      <Eye className="h-4 w-4" strokeWidth={1.75} />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {erro && (
@@ -114,6 +148,41 @@ export default function LoginPortal() {
                   </>
                 )}
               </Button>
+
+              {!esqueciAberto ? (
+                <button
+                  type="button"
+                  onClick={() => setEsqueciAberto(true)}
+                  className="text-center font-mono text-legenda uppercase tracking-[0.1em] text-prata underline-offset-4 hover:text-offwhite hover:underline"
+                >
+                  Esqueci a senha
+                </button>
+              ) : (
+                <div className="border-t border-border pt-5">
+                  <Label htmlFor="telefone-esqueci" className="mb-2 block">
+                    Telefone cadastrado
+                  </Label>
+                  <Input
+                    id="telefone-esqueci"
+                    value={telefoneEsqueci}
+                    onChange={(e) => setTelefoneEsqueci(e.target.value)}
+                    placeholder="(91) 90000-0000"
+                  />
+                  {mensagemEsqueci ? (
+                    <p className="mt-3 font-mono text-legenda text-ambar">{mensagemEsqueci}</p>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={solicitarRedefinicao}
+                      disabled={enviandoEsqueci}
+                      className="mt-3 w-full"
+                    >
+                      {enviandoEsqueci ? <Loader2 className="h-4 w-4 animate-spin" /> : "Avisar a equipe"}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

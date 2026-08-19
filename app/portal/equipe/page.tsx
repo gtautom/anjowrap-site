@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Loader2, Plus, Droplets, CheckCircle2, Users } from "lucide-react";
+import { Loader2, Droplets, CheckCircle2, Undo2, Archive, ArchiveRestore } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PortalCabecalho } from "@/components/portal/PortalCabecalho";
+import { PainelAdesao, type FiltroAdesao } from "@/components/portal/PainelAdesao";
 import { supabase } from "@/lib/supabase/client";
 import { normalizarTelefoneBR } from "@/lib/supabase/telefone";
 import { useSessaoPortal } from "@/lib/supabase/useSessaoPortal";
@@ -54,7 +53,6 @@ function Emblema({ cliente }: { cliente: ClientePlano }) {
 }
 
 export default function PainelEquipe() {
-  const router = useRouter();
   const sessao = useSessaoPortal();
   const [clientes, setClientes] = useState<ClientePlano[] | null>(null);
   const [formAberto, setFormAberto] = useState(false);
@@ -64,41 +62,36 @@ export default function PainelEquipe() {
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState<string | null>(null);
   const [processando, setProcessando] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<FiltroAdesao>("todos");
+  const [verArquivados, setVerArquivados] = useState(false);
 
   const carregarClientes = useCallback(async () => {
-    const { data } = await supabase
-      .from("clientes_plano")
-      .select("*")
-      .order("nome", { ascending: true });
+    const { data } = await supabase.from("clientes_plano").select("*").order("nome", { ascending: true });
     setClientes((data as ClientePlano[]) ?? []);
   }, []);
 
   useEffect(() => {
-    if (sessao.carregando) return;
-    if (!sessao.logado) {
-      router.replace("/portal/login");
-      return;
-    }
-    if (sessao.tipo === "cliente") {
-      router.replace("/portal/cliente");
-      return;
-    }
-    if (sessao.tipo === "equipe") carregarClientes();
-  }, [sessao, router, carregarClientes]);
+    if (sessao.carregando || !sessao.logado || sessao.tipo !== "equipe") return;
+    carregarClientes();
+  }, [sessao, carregarClientes]);
 
   if (sessao.carregando || !sessao.logado || sessao.tipo !== "equipe" || !clientes) {
     return (
-      <>
-        <PortalCabecalho mostrarSair={sessao.logado} />
-        <main className="flex min-h-[60vh] items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-prata" />
-        </main>
-      </>
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-prata" />
+      </main>
     );
   }
 
   const { equipe } = sessao;
-  const ordenados = [...clientes].sort((a, b) => pesoOrdenacao(a) - pesoOrdenacao(b) || a.nome.localeCompare(b.nome));
+  const visiveis = clientes.filter((c) => (verArquivados ? c.arquivado : !c.arquivado));
+  const filtrados = visiveis.filter((c) => {
+    if (filtro === "ativos") return c.status === "contratado" && estadoDoPlano(c) === "ativo";
+    if (filtro === "aguardando") return c.status === "contratado" && estadoDoPlano(c) === "expirado";
+    if (filtro === "pendentes") return c.status === "pendente";
+    return true;
+  });
+  const ordenados = [...filtrados].sort((a, b) => pesoOrdenacao(a) - pesoOrdenacao(b) || a.nome.localeCompare(b.nome));
 
   async function cadastrarCliente() {
     setErroForm(null);
@@ -149,6 +142,47 @@ export default function PainelEquipe() {
     carregarClientes();
   }
 
+  async function desmarcarLavagem(cliente: ClientePlano) {
+    if (cliente.lavagens_usadas === 0) return;
+    const seguir = window.confirm(`Desmarcar a última lavagem registrada de ${cliente.nome}?`);
+    if (!seguir) return;
+
+    setProcessando(cliente.id);
+    const { data: ultima } = await supabase
+      .from("lavagens")
+      .select("id")
+      .eq("cliente_id", cliente.id)
+      .order("data", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (ultima) {
+      await supabase.from("lavagens").delete().eq("id", ultima.id);
+      await supabase
+        .from("clientes_plano")
+        .update({ lavagens_usadas: Math.max(0, cliente.lavagens_usadas - 1) })
+        .eq("id", cliente.id);
+    }
+    setProcessando(null);
+    carregarClientes();
+  }
+
+  async function alternarArquivado(cliente: ClientePlano) {
+    const arquivando = !cliente.arquivado;
+    if (arquivando) {
+      const seguir = window.confirm(`Arquivar ${cliente.nome}? Some das listas ativas, mas o histórico é mantido.`);
+      if (!seguir) return;
+    }
+
+    setProcessando(cliente.id);
+    await supabase
+      .from("clientes_plano")
+      .update({ arquivado: arquivando, arquivado_em: arquivando ? new Date().toISOString() : null })
+      .eq("id", cliente.id);
+    setProcessando(null);
+    carregarClientes();
+  }
+
   async function confirmarPagamento(cliente: ClientePlano) {
     const renovando = cliente.status === "contratado";
     const seguir = window.confirm(
@@ -179,96 +213,106 @@ export default function PainelEquipe() {
   }
 
   return (
-    <>
-      <PortalCabecalho mostrarSair />
-      <main className="mx-auto max-w-4xl px-6 py-16">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="rotulo mb-2">Equipe · {equipe.papel === "admin" ? "Admin" : "Funcionário"}</p>
-            <h1 className="font-display text-h2 font-semibold uppercase leading-none tracking-[0.02em]">
-              Clientes do plano
-            </h1>
-          </div>
-          <div className="flex gap-3">
-            {equipe.papel === "admin" && (
-              <Button asChild variant="outline" size="sm">
-                <Link href="/portal/equipe/nova-equipe">
-                  <Users className="mr-2 h-4 w-4" strokeWidth={1.75} />
-                  Equipe
-                </Link>
-              </Button>
-            )}
-            <Button size="sm" onClick={() => setFormAberto((v) => !v)}>
-              <Plus className="mr-2 h-4 w-4" strokeWidth={1.75} />
-              Novo cliente
-            </Button>
-          </div>
+    <main className="mx-auto max-w-4xl px-6 py-16">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="rotulo mb-2">Equipe · {equipe.papel === "admin" ? "Admin" : "Funcionário"}</p>
+          <h1 className="font-display text-h2 font-semibold uppercase leading-none tracking-[0.02em]">
+            Clientes do plano
+          </h1>
         </div>
+        <InteractiveHoverButton
+          type="button"
+          text={formAberto ? "Fechar" : "Novo cliente"}
+          onClick={() => setFormAberto((v) => !v)}
+        />
+      </div>
 
-        {formAberto && (
-          <Card className="mb-8 p-6">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <Label htmlFor="novo-nome" className="mb-2 block">
-                  Nome
-                </Label>
-                <Input id="novo-nome" value={novoNome} onChange={(e) => setNovoNome(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="novo-telefone" className="mb-2 block">
-                  Telefone
-                </Label>
-                <Input
-                  id="novo-telefone"
-                  value={novoTelefone}
-                  onChange={(e) => setNovoTelefone(e.target.value)}
-                  placeholder="(91) 90000-0000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="novo-email" className="mb-2 block">
-                  E-mail (opcional)
-                </Label>
-                <Input id="novo-email" value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)} />
-              </div>
+      <PainelAdesao clientes={visiveis} filtro={filtro} onFiltrar={setFiltro} />
+
+      {formAberto && (
+        <Card className="mb-8 p-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <Label htmlFor="novo-nome" className="mb-2 block">
+                Nome
+              </Label>
+              <Input id="novo-nome" value={novoNome} onChange={(e) => setNovoNome(e.target.value)} />
             </div>
-            {erroForm && (
-              <p className="mt-3 font-mono text-legenda text-ambar" role="alert">
-                {erroForm}
-              </p>
-            )}
-            <Button onClick={cadastrarCliente} disabled={salvando} className="mt-4">
-              {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cadastrar"}
-            </Button>
-          </Card>
-        )}
+            <div>
+              <Label htmlFor="novo-telefone" className="mb-2 block">
+                Telefone
+              </Label>
+              <Input
+                id="novo-telefone"
+                value={novoTelefone}
+                onChange={(e) => setNovoTelefone(e.target.value)}
+                placeholder="(91) 90000-0000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="novo-email" className="mb-2 block">
+                E-mail (opcional)
+              </Label>
+              <Input id="novo-email" value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)} />
+            </div>
+          </div>
+          {erroForm && (
+            <p className="mt-3 font-mono text-legenda text-ambar" role="alert">
+              {erroForm}
+            </p>
+          )}
+          <Button onClick={cadastrarCliente} disabled={salvando} className="mt-4">
+            {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cadastrar"}
+          </Button>
+        </Card>
+      )}
 
-        {ordenados.length === 0 ? (
-          <p className="text-corpo text-prata">Nenhum cliente cadastrado ainda.</p>
-        ) : (
-          <ul className="grid gap-3">
-            {ordenados.map((cliente) => (
-              <li key={cliente.id}>
-                <Card className="p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="mb-2">
-                        <Emblema cliente={cliente} />
-                      </div>
-                      <p className="font-display text-lg font-semibold uppercase tracking-[0.02em] text-offwhite">
-                        {cliente.nome}
-                      </p>
-                      <p className="font-mono text-legenda text-prata">{cliente.telefone}</p>
-                      {cliente.status === "contratado" && (
-                        <p className="mt-1 font-mono text-legenda uppercase tracking-[0.1em] text-prata">
-                          {cliente.lavagens_usadas}/{LAVAGENS_POR_CICLO} lavagens
-                          {cliente.data_expiracao && ` · até ${formatarData(cliente.data_expiracao)}`}
-                        </p>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="font-mono text-legenda uppercase tracking-[0.1em] text-prata">
+          {ordenados.length} {ordenados.length === 1 ? "cliente" : "clientes"}
+        </p>
+        <button
+          type="button"
+          onClick={() => setVerArquivados((v) => !v)}
+          className="font-mono text-legenda uppercase tracking-[0.1em] text-prata underline-offset-4 hover:text-offwhite hover:underline"
+        >
+          {verArquivados ? "Ver ativos" : "Ver arquivados"}
+        </button>
+      </div>
+
+      {ordenados.length === 0 ? (
+        <p className="text-corpo text-prata">Nenhum cliente encontrado.</p>
+      ) : (
+        <ul className="grid gap-3">
+          {ordenados.map((cliente) => (
+            <li key={cliente.id}>
+              <Card className="p-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <Emblema cliente={cliente} />
+                      {cliente.arquivado && (
+                        <span className="w-fit rounded-full border border-borda-forte px-3 py-1 font-mono text-rotulo uppercase tracking-[0.18em] text-prata">
+                          Arquivado
+                        </span>
                       )}
                     </div>
+                    <p className="font-display text-lg font-semibold uppercase tracking-[0.02em] text-offwhite">
+                      {cliente.nome}
+                    </p>
+                    <p className="font-mono text-legenda text-prata">{cliente.telefone}</p>
+                    {cliente.status === "contratado" && (
+                      <p className="mt-1 font-mono text-legenda uppercase tracking-[0.1em] text-prata">
+                        {cliente.lavagens_usadas}/{LAVAGENS_POR_CICLO} lavagens
+                        {cliente.data_expiracao && ` · até ${formatarData(cliente.data_expiracao)}`}
+                      </p>
+                    )}
+                  </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {cliente.status === "contratado" && estadoDoPlano(cliente) === "ativo" && (
+                  <div className="flex flex-wrap gap-2">
+                    {!cliente.arquivado && cliente.status === "contratado" && estadoDoPlano(cliente) === "ativo" && (
+                      <>
                         <Button
                           size="sm"
                           variant="outline"
@@ -278,7 +322,20 @@ export default function PainelEquipe() {
                           <Droplets className="mr-2 h-4 w-4" strokeWidth={1.75} />
                           Registrar lavagem
                         </Button>
-                      )}
+                        {cliente.lavagens_usadas > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={processando === cliente.id}
+                            onClick={() => desmarcarLavagem(cliente)}
+                          >
+                            <Undo2 className="mr-2 h-4 w-4" strokeWidth={1.75} />
+                            Desmarcar lavagem
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    {!cliente.arquivado && (
                       <Button
                         size="sm"
                         disabled={processando === cliente.id}
@@ -293,14 +350,32 @@ export default function PainelEquipe() {
                           </>
                         )}
                       </Button>
-                    </div>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={processando === cliente.id}
+                      onClick={() => alternarArquivado(cliente)}
+                    >
+                      {cliente.arquivado ? (
+                        <>
+                          <ArchiveRestore className="mr-2 h-4 w-4" strokeWidth={1.75} />
+                          Reativar
+                        </>
+                      ) : (
+                        <>
+                          <Archive className="mr-2 h-4 w-4" strokeWidth={1.75} />
+                          Arquivar
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
-    </>
+                </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
   );
 }

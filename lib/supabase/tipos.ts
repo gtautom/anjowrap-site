@@ -6,6 +6,8 @@ export type MembroEquipe = {
   nome: string;
   papel: PapelEquipe;
   ativo: boolean;
+  foto_url: string | null;
+  foto_visivel_clientes: boolean;
   criado_em: string;
 };
 
@@ -19,6 +21,9 @@ export type ClientePlano = {
   data_inicio: string | null;
   data_expiracao: string | null;
   lavagens_usadas: number;
+  foto_url: string | null;
+  arquivado: boolean;
+  arquivado_em: string | null;
   criado_por: string | null;
   confirmado_por: string | null;
   confirmado_em: string | null;
@@ -30,6 +35,40 @@ export type Lavagem = {
   cliente_id: string;
   data: string;
   registrado_por: string;
+};
+
+export type HorarioBloqueado = {
+  id: string;
+  data: string;
+  hora: string;
+  motivo: string | null;
+  criado_por: string | null;
+  criado_em: string;
+};
+
+export type Agendamento = {
+  id: string;
+  cliente_id: string;
+  data: string;
+  hora: string;
+  criado_por: string | null;
+  criado_em: string;
+};
+
+/** View pública (view "horarios_ocupados") — só data/hora, sem revelar de quem é o agendamento. */
+export type HorarioOcupado = { data: string; hora: string };
+
+export type TipoNotificacao = "senha";
+
+export type Notificacao = {
+  id: string;
+  tipo: TipoNotificacao;
+  cliente_id: string | null;
+  mensagem: string;
+  lida: boolean;
+  lida_por: string | null;
+  lida_em: string | null;
+  criado_em: string;
 };
 
 /** 4 lavagens por ciclo — mesmo número confirmado pela Jade em lib/plano.ts (PLANO.lavagensPorMes). */
