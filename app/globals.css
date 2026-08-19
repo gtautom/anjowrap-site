@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Compensa o cabecalho fixo (h-16) ao pular por ancora */
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    @apply bg-preto text-offwhite font-sans antialiased;
+  }
+
+  /* Kit: display sempre em caixa alta */
+  h1,
+  h2,
+  h3 {
+    @apply font-display uppercase;
+  }
+
+  ::selection {
+    @apply bg-ambar text-preto;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ambar ring-offset-2 ring-offset-preto;
+  }
+}
+
+@layer components {
+  /* Rotulo tecnico em mono — numeracao de secao e legendas */
+  .rotulo {
+    @apply font-mono text-rotulo uppercase tracking-[0.18em] text-prata;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
