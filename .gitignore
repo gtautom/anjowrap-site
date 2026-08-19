@@ -10,3 +10,6 @@ next-env.d.ts
 .DS_Store
 .playwright-cli/
 *-netlify.zip
+
+# Local Netlify folder
+.netlify
