@@ -45,22 +45,22 @@ export function PlanoLavagem({ variante = "completa" }: { variante?: VariantePla
 
               <p className="mt-4 max-w-leitura text-corpo text-prata">
                 {completa
-                  ? "Quatro a cinco lavagens em um mês, por um valor fechado. Pra continuar no mês seguinte é só renovar — sem cartão cadastrado, sem cobrança automática."
-                  : `Um mês de lavagem semanal, valor fechado, na oficina, em ${PLANO.praca}. Sem cartão cadastrado, sem cobrança automática.`}
+                  ? `${PLANO.lavagensPorMes} lavagens em ${PLANO.validadeDias} dias — uma por semana, dia e horário agendados com antecedência. Pra continuar depois é só renovar — sem cartão cadastrado, sem cobrança automática.`
+                  : `${PLANO.lavagensPorMes} lavagens no mês, uma por semana, na oficina, em ${PLANO.praca}. Sem cartão cadastrado, sem cobrança automática.`}
               </p>
 
-              <p className="mt-6 flex items-baseline gap-2 font-display leading-none text-ambar">
+              <p className="mt-6 flex flex-wrap items-baseline gap-x-2 gap-y-1 font-display leading-none text-ambar">
                 <span className="text-[3rem] font-bold md:text-[3.5rem]">{preco}</span>
                 <span className="font-sans text-corpo font-normal text-prata">
-                  / {PLANO.duracao.toLowerCase()}
+                  / {PLANO.duracao.toLowerCase()} · {formatarPreco(PLANO.valorPorLavagem)} a lavagem
                 </span>
               </p>
 
               {completa && (
                 <p className="mt-6 max-w-leitura text-corpo text-prata">
-                  O plano é executado na oficina, em {PLANO.praca}. PPF, envelopamento e as
-                  demais aplicações a gente atende para todo o Brasil — a lavagem semanal exige
-                  o carro aqui.
+                  O plano é executado na oficina, em {PLANO.praca}, com o melhor dia e horário
+                  combinados antes de cada lavagem. PPF, envelopamento e as demais aplicações a
+                  gente atende para todo o Brasil — a lavagem semanal exige o carro aqui.
                 </p>
               )}
 

@@ -63,7 +63,7 @@ export const viewport: Viewport = {
 };
 
 /**
- * Horário confirmado pela Jade em 19/08/2026 — seg-sex 08h-18h, sem sábado.
+ * Horário confirmado pela Jade em 19/08/2026 — seg-sex 08h-18h, sáb 08h30-12h.
  * Fonte única em lib/servicos.ts (HORARIO), reaproveitada aqui e no rodapé.
  *
  * address e areaServed sao ortogonais no schema.org: endereco fisico em
@@ -91,14 +91,12 @@ const jsonLd = {
     addressCountry: PRACA.pais,
   },
   areaServed: { "@type": "Country", name: "Brasil" },
-  openingHoursSpecification: [
-    {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: HORARIO.dias,
-      opens: HORARIO.abre,
-      closes: HORARIO.fecha,
-    },
-  ],
+  openingHoursSpecification: HORARIO.blocos.map((bloco) => ({
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: bloco.dias,
+    opens: bloco.abre,
+    closes: bloco.fecha,
+  })),
   sameAs: ["https://www.instagram.com/anjowrap"],
 };
 

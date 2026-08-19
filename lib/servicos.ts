@@ -128,15 +128,26 @@ export const CREDENCIAL = {
 export const PRACA = { cidade: "Belém", estado: "PA", pais: "BR" } as const;
 
 /**
- * Horário de funcionamento — confirmado pela Jade em 19/08/2026.
+ * Horário de funcionamento — confirmado pela Jade em 19/08/2026 (sábado
+ * chegou depois, num segundo print — 08h30, não 08h, diferente do que a
+ * gente tinha suposto antes de confirmar).
  * Fonte única: alimenta o rodapé (visível pro visitante) e o
- * openingHoursSpecification do JSON-LD. Sábado não abre.
+ * openingHoursSpecification do JSON-LD, um bloco por linha.
  */
 export const HORARIO = {
-  rotulo: "Segunda a sexta, 08h às 18h",
-  abre: "08:00",
-  fecha: "18:00",
-  dias: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+  rotulo: "Segunda a sexta, 08h às 18h · Sábado, 08h30 às 12h",
+  blocos: [
+    {
+      dias: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      abre: "08:00",
+      fecha: "18:00",
+    },
+    {
+      dias: ["Saturday"],
+      abre: "08:30",
+      fecha: "12:00",
+    },
+  ],
 } as const;
 
 /**
