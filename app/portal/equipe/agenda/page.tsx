@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Loader2, Ban, Lock, X } from "lucide-react";
+import { Loader2, Lock, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { CalendarioMes, type MarcadorDia } from "@/components/portal/CalendarioMes";
 import { supabase } from "@/lib/supabase/client";
 import { useSessaoPortal } from "@/lib/supabase/useSessaoPortal";
@@ -24,6 +25,7 @@ export default function AgendaEquipe() {
   const [clientesPorId, setClientesPorId] = useState<Record<string, ClientePlano>>({});
   const [carregando, setCarregando] = useState(true);
   const [processando, setProcessando] = useState<string | null>(null);
+  const [modoEdicao, setModoEdicao] = useState(false);
 
   const carregarMes = useCallback(async (mesRef: Date) => {
     setCarregando(true);
@@ -76,6 +78,7 @@ export default function AgendaEquipe() {
   }
 
   const { equipe } = sessao;
+  const ehAdmin = equipe.papel === "admin";
 
   async function bloquear(dataISO: string, hora: string) {
     setProcessando(`${dataISO}-${hora}`);
@@ -147,14 +150,24 @@ export default function AgendaEquipe() {
             <p className="text-corpo text-prata">Selecione um dia no calendário pra ver os horários.</p>
           ) : (
             <>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <p className="font-display text-lg font-semibold uppercase tracking-[0.02em] text-offwhite">
                   {formatarDataExibicao(diaSelecionado)}
                 </p>
-                <Button size="sm" variant="outline" onClick={() => bloquearDiaInteiro(diaSelecionado)}>
-                  <Lock className="mr-2 h-4 w-4" strokeWidth={1.75} />
-                  Bloquear o dia
-                </Button>
+                {ehAdmin && (
+                  <div className="flex gap-2">
+                    {modoEdicao && (
+                      <Button size="sm" variant="outline" onClick={() => bloquearDiaInteiro(diaSelecionado)}>
+                        <Lock className="mr-2 h-4 w-4" strokeWidth={1.75} />
+                        Bloquear o dia
+                      </Button>
+                    )}
+                    <Button size="sm" variant={modoEdicao ? "default" : "outline"} onClick={() => setModoEdicao((v) => !v)}>
+                      <Pencil className="mr-2 h-4 w-4" strokeWidth={1.75} />
+                      {modoEdicao ? "Concluir edição" : "Editar horários"}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {horariosDoDia.length === 0 ? (
@@ -166,6 +179,7 @@ export default function AgendaEquipe() {
                     const bloqueio = bloqueadosDoDia.find((b) => b.hora.slice(0, 5) === hora);
                     const cliente = agendamento ? clientesPorId[agendamento.cliente_id] : null;
                     const chave = `${diaSelecionado}-${hora}`;
+                    const editavel = ehAdmin && modoEdicao && !agendamento;
 
                     return (
                       <li
@@ -177,7 +191,10 @@ export default function AgendaEquipe() {
                             {formatarHora(hora)}
                           </p>
                           {cliente && <p className="text-legenda text-prata">{cliente.nome}</p>}
-                          {bloqueio && <p className="text-legenda text-prata">Bloqueado{bloqueio.motivo ? ` — ${bloqueio.motivo}` : ""}</p>}
+                          {bloqueio && !editavel && (
+                            <p className="text-legenda text-prata">Bloqueado{bloqueio.motivo ? ` — ${bloqueio.motivo}` : ""}</p>
+                          )}
+                          {!bloqueio && !cliente && !editavel && <p className="text-legenda text-prata">Livre</p>}
                         </div>
 
                         {agendamento && cliente ? (
@@ -189,26 +206,13 @@ export default function AgendaEquipe() {
                           >
                             <X className="h-4 w-4" strokeWidth={1.75} />
                           </Button>
-                        ) : bloqueio ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={processando === bloqueio.id}
-                            onClick={() => desbloquear(bloqueio.id)}
-                          >
-                            Desbloquear
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={processando === chave}
-                            onClick={() => bloquear(diaSelecionado, hora)}
-                          >
-                            <Ban className="mr-2 h-4 w-4" strokeWidth={1.75} />
-                            Bloquear
-                          </Button>
-                        )}
+                        ) : editavel ? (
+                          <ToggleSwitch
+                            checked={!bloqueio}
+                            disabled={processando === chave || processando === bloqueio?.id}
+                            onChange={(ativo) => (ativo ? bloqueio && desbloquear(bloqueio.id) : bloquear(diaSelecionado, hora))}
+                          />
+                        ) : null}
                       </li>
                     );
                   })}

@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2, UserCircle2, Eye, EyeOff, Camera } from "lucide-react";
+import { Loader2, UserCircle2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,8 +76,7 @@ export default function MeuUsuario() {
     setEnviandoFoto(false);
   }
 
-  async function alternarVisibilidade() {
-    const novoValor = !visivelClientes;
+  async function alternarVisibilidade(novoValor: boolean) {
     setVisivelClientes(novoValor);
     await supabase.rpc("atualizar_meu_perfil_equipe", { p_foto_url: fotoUrl, p_visivel: novoValor });
   }
@@ -151,23 +151,12 @@ export default function MeuUsuario() {
           </div>
 
           {sessao.tipo === "equipe" && (
-            <button
-              type="button"
-              onClick={alternarVisibilidade}
-              className="mt-5 flex items-center gap-2 border-t border-border pt-5 font-mono text-legenda uppercase tracking-[0.1em] text-prata transition-colors hover:text-offwhite"
-            >
-              {visivelClientes ? (
-                <>
-                  <Eye className="h-4 w-4 text-ambar" strokeWidth={1.75} />
-                  Meu perfil aparece pros clientes
-                </>
-              ) : (
-                <>
-                  <EyeOff className="h-4 w-4" strokeWidth={1.75} />
-                  Meu perfil não aparece pros clientes
-                </>
-              )}
-            </button>
+            <div className="mt-5 flex items-center justify-between border-t border-border pt-5">
+              <p className="font-mono text-legenda uppercase tracking-[0.1em] text-prata">
+                Aparecer pra clientes
+              </p>
+              <ToggleSwitch checked={visivelClientes} onChange={alternarVisibilidade} />
+            </div>
           )}
         </Card>
 

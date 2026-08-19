@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatarPreco } from "@/lib/catalogo";
@@ -65,11 +66,14 @@ export function PlanoLavagem({ variante = "completa" }: { variante?: VariantePla
               )}
 
               {completa ? (
-                <div className="mt-8 border-t border-border pt-8">
+                <div className="mt-8 flex flex-wrap gap-3 border-t border-border pt-8">
                   <Button asChild className="w-full sm:w-auto">
                     <a href={linkRenovar} target="_blank" rel="noopener noreferrer">
                       Renovar
                     </a>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full sm:w-auto">
+                    <Link href="/portal/login">Acessar plano</Link>
                   </Button>
                 </div>
               ) : (

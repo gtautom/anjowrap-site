@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Droplets, CheckCircle2, Undo2, Archive, ArchiveRestore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PainelAdesao, type FiltroAdesao } from "@/components/portal/PainelAdesao";
+import type { FiltroAdesao } from "@/components/portal/PainelAdesao";
 import { supabase } from "@/lib/supabase/client";
 import { normalizarTelefoneBR } from "@/lib/supabase/telefone";
 import { useSessaoPortal } from "@/lib/supabase/useSessaoPortal";
@@ -52,8 +53,9 @@ function Emblema({ cliente }: { cliente: ClientePlano }) {
   );
 }
 
-export default function PainelEquipe() {
+function PainelEquipeConteudo() {
   const sessao = useSessaoPortal();
+  const searchParams = useSearchParams();
   const [clientes, setClientes] = useState<ClientePlano[] | null>(null);
   const [formAberto, setFormAberto] = useState(false);
   const [novoNome, setNovoNome] = useState("");
@@ -62,7 +64,8 @@ export default function PainelEquipe() {
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState<string | null>(null);
   const [processando, setProcessando] = useState<string | null>(null);
-  const [filtro, setFiltro] = useState<FiltroAdesao>("todos");
+  const filtroInicial = (searchParams.get("filtro") as FiltroAdesao | null) ?? "todos";
+  const [filtro, setFiltro] = useState<FiltroAdesao>(filtroInicial);
   const [verArquivados, setVerArquivados] = useState(false);
 
   const carregarClientes = useCallback(async () => {
@@ -228,7 +231,29 @@ export default function PainelEquipe() {
         />
       </div>
 
-      <PainelAdesao clientes={visiveis} filtro={filtro} onFiltrar={setFiltro} />
+      <div className="mb-8 flex flex-wrap gap-2">
+        {(
+          [
+            ["todos", "Todos"],
+            ["ativos", "Ativos"],
+            ["aguardando", "Aguardando renovação"],
+            ["pendentes", "Pendentes"],
+          ] as [FiltroAdesao, string][]
+        ).map(([chave, rotulo]) => (
+          <button
+            key={chave}
+            type="button"
+            onClick={() => setFiltro(chave)}
+            className={`rounded-full border px-4 py-2 font-mono text-legenda uppercase tracking-[0.1em] transition-colors ${
+              filtro === chave
+                ? "border-ambar/50 bg-ambar/10 text-ambar"
+                : "border-borda text-prata hover:border-borda-forte hover:text-offwhite"
+            }`}
+          >
+            {rotulo}
+          </button>
+        ))}
+      </div>
 
       {formAberto && (
         <Card className="mb-8 p-6">
@@ -377,5 +402,19 @@ export default function PainelEquipe() {
         </ul>
       )}
     </main>
+  );
+}
+
+export default function PainelEquipe() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-prata" />
+        </main>
+      }
+    >
+      <PainelEquipeConteudo />
+    </Suspense>
   );
 }

@@ -4,12 +4,14 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Users2, CalendarDays, UserSquare2, ShieldCheck } from "lucide-react";
+import { Loader2, Home, LayoutDashboard, Users2, CalendarDays, UserSquare2, ShieldCheck } from "lucide-react";
 import { PortalCabecalho } from "@/components/portal/PortalCabecalho";
 import { SinoNotificacoes } from "@/components/portal/SinoNotificacoes";
 import { useSessaoPortal } from "@/lib/supabase/useSessaoPortal";
 
 const ABAS = [
+  { href: "/", rotulo: "Início", icone: Home },
+  { href: "/portal/equipe/informacoes", rotulo: "Informações gerais", icone: LayoutDashboard },
   { href: "/portal/equipe", rotulo: "Clientes", icone: Users2 },
   { href: "/portal/equipe/agenda", rotulo: "Agenda", icone: CalendarDays },
   { href: "/portal/equipe/funcionarios", rotulo: "Funcionários", icone: UserSquare2 },

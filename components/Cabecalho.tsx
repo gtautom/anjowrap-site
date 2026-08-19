@@ -32,6 +32,9 @@ export default function Cabecalho() {
 
         <div className="hidden items-center gap-4 md:flex">
           <DropdownNavigation navItems={NAV_ITEMS.slice(0, 3)} />
+          <Button asChild variant="outline" size="sm">
+            <Link href="/portal/login">Entrar</Link>
+          </Button>
           <Button asChild size="sm">
             <a href="/#orcamento">Orçamento</a>
           </Button>
@@ -80,6 +83,13 @@ export default function Cabecalho() {
                 </a>
               ),
             )}
+            <Link
+              href="/portal/login"
+              onClick={() => setMenuAberto(false)}
+              className="font-mono text-legenda uppercase tracking-[0.1em] text-ambar"
+            >
+              Entrar no portal
+            </Link>
           </nav>
         </div>
       )}
