@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Saira_Condensed, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
-import { PRACA } from "@/lib/servicos";
+import { PRACA, HORARIO } from "@/lib/servicos";
 import "./globals.css";
 
 const saira = Saira_Condensed({
@@ -63,8 +63,8 @@ export const viewport: Viewport = {
 };
 
 /**
- * TODO: horario de funcionamento nao foi informado pelo cliente, abaixo e
- * suposicao — confirmar antes de publicar.
+ * Horário confirmado pela Jade em 19/08/2026 — seg-sex 08h-18h, sem sábado.
+ * Fonte única em lib/servicos.ts (HORARIO), reaproveitada aqui e no rodapé.
  *
  * address e areaServed sao ortogonais no schema.org: endereco fisico em
  * Belem + areaServed de pais e a codificacao correta de "oficina aqui,
@@ -94,21 +94,9 @@ const jsonLd = {
   openingHoursSpecification: [
     {
       "@type": "OpeningHoursSpecification",
-      dayOfWeek: [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-      ],
-      opens: "08:00",
-      closes: "18:00",
-    },
-    {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: "Saturday",
-      opens: "08:00",
-      closes: "12:00",
+      dayOfWeek: HORARIO.dias,
+      opens: HORARIO.abre,
+      closes: HORARIO.fecha,
     },
   ],
   sameAs: ["https://www.instagram.com/anjowrap"],

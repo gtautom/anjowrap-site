@@ -1,34 +1,27 @@
-import { CATALOGO } from "@/lib/catalogo";
-
 /**
- * Plano de lavagem semanal — assinatura recorrente cobrada via Asaas.
+ * Plano de lavagem semanal — oferta própria, separada dos níveis I/II/III
+ * do catálogo (não é uma variação deles, mesmo que o valor bata com algum
+ * preço da tabela). Confirmado pela Jade em 19/08/2026.
  *
- * Nível assumido por instrução do cliente em 18/08/2026: Limpeza nível II —
- * confirmar com a Anjo antes de publicar em produção. A conta fecha: R$ 400
- * ÷ 4 semanas = R$ 100/lavagem, exatamente o preço da Limpeza nível II Hatch
- * em lib/catalogo.ts. `inclui` é derivado do próprio item do catálogo pra
- * nunca divergir da tabela de preços.
+ * Pagamento por link avulso do Asaas (não é assinatura recorrente): o
+ * cliente paga um mês por vez e clica em "Renovar" quando quiser continuar.
+ * Sem cadastro de cartão, sem cobrança automática.
  */
-const NIVEL_ID = "limpeza-nivel-2";
-const nivel = CATALOGO.find((item) => item.id === NIVEL_ID);
-if (!nivel) throw new Error(`lib/plano.ts: item "${NIVEL_ID}" não existe em lib/catalogo.ts`);
-
 export const PLANO = {
   nome: "Plano de lavagem semanal",
-  nivel: nivel.nome,
   valorMensal: 400,
+  duracao: "Um mês",
   frequencia: "Uma lavagem por semana",
   /** Presencial — não é o mesmo alcance nacional dos demais serviços. */
   praca: "Belém",
-  inclui: nivel.inclui.flatMap((bloco) => bloco.itens),
 } as const;
 
 /**
- * Liga o formulário de assinatura em /servicos. Desligada (padrão), o bloco
- * do plano cai no CTA de WhatsApp em vez de renderizar um formulário que
- * chamaria uma rota sem ASAAS_API_KEY configurada. Ligar só depois que a
- * chave de produção estiver no painel do Netlify.
+ * Link de pagamento avulso do Asaas — reaproveitado ou renovado manualmente
+ * pela Jade a cada ciclo, ligado ao botão "Renovar" do site. Enquanto não
+ * configurado, o botão cai no WhatsApp. NEXT_PUBLIC_ porque é só um link de
+ * pagamento (não uma chave), precisa estar disponível no browser.
  */
-export function planoAtivo(): boolean {
-  return process.env.NEXT_PUBLIC_PLANO_ATIVO === "1";
+export function linkRenovarPlano(): string | null {
+  return process.env.NEXT_PUBLIC_ASAAS_LINK_PLANO || null;
 }

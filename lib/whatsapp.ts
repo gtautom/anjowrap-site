@@ -56,11 +56,11 @@ export function linkAgendamento(pedido: PedidoAgendamento): string {
   ]);
 }
 
-/** Plano de lavagem — usado quando a assinatura online está desligada. */
+/** Plano de lavagem — usado enquanto o link de pagamento do Asaas não está configurado. */
 export function linkPlanoLavagem(): string {
   return montarLink([
     "Olá, tudo bem?",
     "Vim pelo site.",
-    "Queria assinar o plano de lavagem semanal.",
+    "Queria contratar o plano de lavagem semanal.",
   ]);
 }

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { linkWhatsAppDireto } from "@/lib/whatsapp";
+import { HORARIO } from "@/lib/servicos";
 
 export default function Footer() {
   return (
@@ -46,6 +47,9 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
+            <p className="mt-5 font-mono text-legenda uppercase tracking-[0.1em] text-terciario">
+              {HORARIO.rotulo}
+            </p>
           </div>
 
           <div>

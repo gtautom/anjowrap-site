@@ -114,7 +114,7 @@ export const NOMES_SERVICOS = SERVICOS.map((s) => s.nome);
  * O prefixo pode ser qualquer símbolo — a animação de contagem lê só os dígitos.
  */
 export const INDICADORES: { valor: string; rotulo: string }[] = [
-  { valor: "+500", rotulo: "carros protegidos" }, // TODO: confirmar com o cliente
+  { valor: "+200", rotulo: "carros protegidos" }, // confirmado pela Jade em 19/08/2026
   { valor: "12", rotulo: "anos de oficina" },
 ];
 
@@ -126,6 +126,18 @@ export const CREDENCIAL = {
 
 /** Endereço físico da oficina. Alimenta o PostalAddress do JSON-LD. */
 export const PRACA = { cidade: "Belém", estado: "PA", pais: "BR" } as const;
+
+/**
+ * Horário de funcionamento — confirmado pela Jade em 19/08/2026.
+ * Fonte única: alimenta o rodapé (visível pro visitante) e o
+ * openingHoursSpecification do JSON-LD. Sábado não abre.
+ */
+export const HORARIO = {
+  rotulo: "Segunda a sexta, 08h às 18h",
+  abre: "08:00",
+  fecha: "18:00",
+  dias: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+} as const;
 
 /**
  * O que a marca atende e onde. Dois registros porque a realidade é dupla:
